@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+streamlit
+langchain
+langchain_openai
+langgraph
+langchain-community
+googlemaps
+tavily-python
+requests
+pydantic
+python-dotenv

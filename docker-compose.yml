@@ -1,0 +1,58 @@
+# Docker Compose file for AI Health Navigator
+
+services:
+  # Backend FastAPI service
+  backend:
+    build: .
+    container_name: ai-health-backend
+    working_dir: /app/backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/backend/__pycache__
+      - /app/frontend/__pycache__
+    environment:
+      - PYTHONPATH=/app
+    env_file:
+      - .env
+    networks:
+      - ai-health-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Frontend Streamlit service
+  frontend:
+    build: .
+    container_name: ai-health-frontend
+    working_dir: /app/frontend
+    command: streamlit run app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+      - /app/backend/__pycache__
+      - /app/frontend/__pycache__
+    environment:
+      - PYTHONPATH=/app
+    env_file:
+      - .env
+    networks:
+      - ai-health-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  ai-health-network:
+    driver: bridge
+
+volumes:
+  app-data:
