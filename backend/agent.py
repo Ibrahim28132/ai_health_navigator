@@ -17,7 +17,8 @@ gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
 tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 openweather_key = os.getenv("OPENWEATHER_API_KEY")
 
-# State
+
+# State with context
 class State(TypedDict):
     query: str
     symptoms: str
@@ -28,6 +29,7 @@ class State(TypedDict):
     advisories: str
     weather: str
     final_response: str
+    context: List[dict]  # Conversation history
 
 # Models
 class Extract(BaseModel):
@@ -135,6 +137,7 @@ def node_critic(state: State) -> dict:
     ))
     return {"final_response": response.content}
 
+
 # Graph
 graph = StateGraph(State)
 graph.add_node("extract", node_extract)
@@ -147,3 +150,21 @@ graph.add_edge("planner", "execute")
 graph.add_edge("execute", "critic")
 graph.add_edge("critic", END)
 app = graph.compile()
+
+# Context manager for chat
+from collections import defaultdict
+user_contexts = defaultdict(list)  # user_id -> list of messages
+
+def chat(user_id: str, message: str) -> str:
+    # Append user message to context
+    user_contexts[user_id].append({"role": "user", "content": message})
+    # Build context for LLM
+    context = user_contexts[user_id][-5:]  # last 5 messages
+    # Use LLM to respond
+    prompt = ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate.from_template("You are a helpful health assistant. Use context to answer follow-up questions. If medical, remind user to consult a professional."),
+        *[HumanMessagePromptTemplate.from_template(m["content"]) for m in context if m["role"] == "user"]
+    ])
+    response = llm.invoke(prompt.format_messages())
+    user_contexts[user_id].append({"role": "assistant", "content": response.content})
+    return response.content
