@@ -15,7 +15,7 @@ if st.button("Send"):
         with st.spinner("Thinking..."):
             try:
                 # Use a fixed user_id for demo; in production, use login/session
-                resp = requests.post("http://localhost:8000/chat", json={"user_id": "demo", "message": user_input})
+                resp = requests.post("http://backend:8000/chat", json={"user_id": "demo", "message": user_input})
                 data = resp.json()
                 if "error" in data:
                     st.error(data["error"])
