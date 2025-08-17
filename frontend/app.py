@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-st.title("🩺 AI Health Navigator")
+st.title("🩺 AI Health Assistant")
 st.markdown("Ask health questions and follow up for more info.")
 
 # Session state for chat history
